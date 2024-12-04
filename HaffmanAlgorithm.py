@@ -9,7 +9,7 @@ class Node:
         self.right= right
         
     def __lt__ (self, other):
-        return self.freq < other.freq
+        return self.freq > other.freq
     
 def BuildTree(text):
     
