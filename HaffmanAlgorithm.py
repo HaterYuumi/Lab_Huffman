@@ -39,6 +39,21 @@ def BuildTree(text):
         
     return heap[0]
 
+def HuffmanBuild(node, prefix = '', codes = None):
+    if codes is None:
+        codes = {}
+        
+    if node.ch is not None:
+        codes[node.ch] = prefix
+    else:
+        HuffmanBuild(node.left, prefix + '0', codes)
+        HuffmanBuild(node.right, prefix + '1', codes)
+        
+    return codes
+
+def encode_text(text, codes):
+    return ''.join(codes[char] for char in text)
+
 def read_file(file_path):
     with open(file_path, 'r') as file:
         return file.read()
@@ -46,39 +61,36 @@ def read_file(file_path):
 def write_encode_file(file_path, encoded_text):
     with open(file_path, 'w') as file:
         file.write(encoded_text)
-        
-        
-        
-node1 = Node('a', 3)
-node2 = Node('b', 2)
-print(node1 < node2)  # Ожидается True, т.к. частота 'a' больше, чем частота 'b'
 
-text = "abacabad"
+def Decode_text(encode_text, tree):
+    decoded_output = ""
+    node = tree
+    
+    for bit in encoded_text:
+        if bit == '0':
+            node = node.left
+        else:
+            node = node.right
+            
+        if node.ch is not None:
+            decoded_output += node.ch
+            node = tree
+        
+    return decoded_output
+
+file = 'text.txt'
+text = read_file(file)
+
 tree = BuildTree(text)
+codes = HuffmanBuild(tree)
 
-# Для проверки структуры дерева
-print(tree.ch)  # Ожидаем None, потому что корень не содержит символа
-print(tree.freq)  # Ожидаем общую частоту всех символов в строке
+encoded_text = encode_text(text, codes)
 
+write_encode_file(file, encoded_text)
 
+print("Коды символов:", codes)
+print("Зашифрованный текст:", encoded_text)
 
+decoded_text = Decode_text(encoded_text, tree)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print("Декодированный текст:", decoded_text)
