@@ -55,38 +55,46 @@ def write_encode_file(file_path, encoded_text):
         file.write(encoded_text)
 
 def write_binary(encoded_text, frequency, file_path):
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, 'wb') as file:
         
-        freq_string = ' '.join([f"{ord(char)}:{freq}" for char, freq in frequency.items()])
-        f.write(freq_string + '\n')  
-        
-        byte_arr = bytearray()
-        
-        for i in range(0, len(encoded_text), 8):
-            byte = encoded_text[i:i + 8]
-            if len(byte) < 8:
-                byte += '0' * (8 - len(byte))
-            byte_arr.append(int(byte, 2))
+        for char, freq in frequency.items():
+            char_bytes = char.encode('utf-8')  
+            file.write(len(char_bytes).to_bytes(1, byteorder='big'))  
+            file.write(char_bytes)  
+            file.write(freq.to_bytes(4, byteorder='big'))  
 
-        f.write(byte_arr.decode('latin-1'))
+        
+        encoded_bits = ''.join(encoded_text)
+        
+        encoded_bytes = int(encoded_bits, 2).to_bytes((len(encoded_bits) + 7) // 8, byteorder='big')
+        file.write(encoded_bytes)
     
 def read_binary(file_path):
-    with open(file_path, 'r', encoding = 'utf-8') as f:
-        
-        frequency = {}
-        
-        line = f.readline().strip()
-        
-        freq_data = line.split(' ')
+    frequency = {}
+    encoded_text = ""
 
-        for item in freq_data:
-            if ':' in item:  
-                char, freq = item.split(':', 1)
-                if char == '':
-                    char = ' '  
-                frequency[chr(int(char))] = int(freq) 
+    with open(file_path, 'rb') as file:
+        
+        while True:
+            len_char = file.read(1)
+            if not len_char:
+                break  
+            len_char = int.from_bytes(len_char, byteorder='big')
 
-        encoded_text = ''.join(format(ord(byte), '08b') for byte in f.read())
+            
+            char_bytes = file.read(len_char)
+            
+            char = char_bytes
+
+            freq = int.from_bytes(file.read(4), byteorder='big')
+
+            frequency[char] = freq
+
+        
+        encoded_bytes = file.read()
+
+        encoded_bits = bin(int.from_bytes(encoded_bytes, byteorder='big'))[2:]
+        encoded_text = encoded_bits.zfill(len(encoded_bytes) * 8)  
 
     return frequency, encoded_text
 
