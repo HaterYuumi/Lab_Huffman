@@ -40,49 +40,37 @@ def HuffmanBuild(node, prefix='', codes={}):
 def encode_text(text, codes):
     return ''.join(codes[char] for char in text)
 
-def write_to_binary(frequency, encoded_text, output_file_path):
-    with open(output_file_path, 'wb') as file:
-        
+def write_to_text(frequency, encoded_text, file_path):
+
+    with open(file_path, 'w', encoding='utf-8') as file:
         for char, freq in frequency.items():
-            escaped_char = repr(char)  
-            file.write(f"{freq}:{escaped_char}\n".encode('utf-8'))
+            escaped_char = repr(char)  # repr для корректной записи символов
+            file.write(f"{freq}:{escaped_char}\n")
         
-        file.write(b"\n")
+        file.write("\n")
 
-        #дополнительные нули, чтобы длина строки была кратна 8
-        pad_length = 8 - len(encoded_text) % 8
-        encoded_text += '0' * pad_length  
+        file.write(encoded_text)
 
-        encoded_bits = int(encoded_text, 2)  
-        byte_array = encoded_bits.to_bytes((encoded_bits.bit_length() + 7) // 8, byteorder='big')
-        file.write(byte_array)
+def read_from_text(file_path):
 
-def read_from_binary(file_path):
     frequency = {}
     encoded_text = ""
-    
-    with open(file_path, 'rb') as file:
-        lines = []
-        while True:
-            line = file.readline().decode('utf-8')
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
             if line.strip() == "": 
                 break
-            lines.append(line)
-        
-        for line in lines:
             try:
-                freq, char = line.strip().split(":", 1)
+                freq, char = line.strip().split(":", 1)  
                 char = eval(char)  
                 frequency[char] = int(freq)
-            except ValueError:
+            except ValueError as e:
+                print(f"Ошибка при обработке строки: '{line.strip()}'. Пропускаем её.")
                 continue
-        
-        encoded_bits = file.read()
-        if encoded_bits:
-            encoded_text = ''.join(format(byte, '08b') for byte in encoded_bits)
 
+        encoded_text = file.read().strip()
+    
     return frequency, encoded_text
-
+    
 def Decode_text(encoded_text, tree):
     decoded_output = ""
     node = tree
@@ -106,7 +94,6 @@ def console():
         return console()
     
     file_path = 'text.txt'
-    output_file_path = 'output.bin'
     
     if choice == '0':
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -121,21 +108,21 @@ def console():
         
         encoded_text = encode_text(text, codes)
         
-        write_to_binary(frequency, encoded_text, output_file_path)
+        write_to_text(frequency, encoded_text, file_path)
         
         print("\nТаблица кодов Хаффмана:")
         for char, code in codes.items():
             print(f"'{char}': {code}")
         
         original_size = len(text.encode('utf-8'))
-        encoded_size = len(encoded_text) // 8 + (len(encoded_text) % 8 != 0)  
+        encoded_size = (len(encoded_text) + 7) // 8
         
         print("\nРазмер исходного текста:", original_size, "байт")
         print("Размер закодированного текста:", encoded_size, "байт")
 
     elif choice == '1':
-        frequency, encoded_text = read_from_binary(output_file_path)
-
+        frequency, encoded_text = read_from_text(file_path)
+        
         tree = BuildTree(frequency)
         
         decoded_text = Decode_text(encoded_text, tree)
@@ -143,7 +130,7 @@ def console():
         print("\nДекодированный текст:")
         print(decoded_text)
         
-        with open('decoded_text.txt', 'w', encoding='utf-8') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             f.write(decoded_text)
 
 if __name__ == "__main__":
