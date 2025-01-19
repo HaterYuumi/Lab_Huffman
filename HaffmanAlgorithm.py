@@ -41,13 +41,17 @@ def encode_text(text, codes):
     return ''.join(codes[char] for char in text)
 
 def write_to_binary(frequency, encoded_text, output_file_path):
-
     with open(output_file_path, 'wb') as file:
+        
         for char, freq in frequency.items():
-            escaped_char = repr(char)  # repr для корректной записи символов
+            escaped_char = repr(char)  
             file.write(f"{freq}:{escaped_char}\n".encode('utf-8'))
         
         file.write(b"\n")
+
+        #дополнительные нули, чтобы длина строки была кратна 8
+        pad_length = 8 - len(encoded_text) % 8
+        encoded_text += '0' * pad_length  
 
         encoded_bits = int(encoded_text, 2)  
         byte_array = encoded_bits.to_bytes((encoded_bits.bit_length() + 7) // 8, byteorder='big')
@@ -56,6 +60,7 @@ def write_to_binary(frequency, encoded_text, output_file_path):
 def read_from_binary(file_path):
     frequency = {}
     encoded_text = ""
+    
     with open(file_path, 'rb') as file:
         lines = []
         while True:
@@ -67,7 +72,7 @@ def read_from_binary(file_path):
         for line in lines:
             try:
                 freq, char = line.strip().split(":", 1)
-                char = eval(char)
+                char = eval(char)  
                 frequency[char] = int(freq)
             except ValueError:
                 continue
@@ -77,7 +82,7 @@ def read_from_binary(file_path):
             encoded_text = ''.join(format(byte, '08b') for byte in encoded_bits)
 
     return frequency, encoded_text
-    
+
 def Decode_text(encoded_text, tree):
     decoded_output = ""
     node = tree
@@ -130,7 +135,7 @@ def console():
 
     elif choice == '1':
         frequency, encoded_text = read_from_binary(output_file_path)
-        
+
         tree = BuildTree(frequency)
         
         decoded_text = Decode_text(encoded_text, tree)
